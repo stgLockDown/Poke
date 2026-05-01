@@ -25,6 +25,22 @@ DEFAULT_UA = (
     "ethical-stock-monitor; contact=you@example.com)"
 )
 
+# When a proxy (residential/mobile) is configured, the user is running
+# against retailer WAFs on their own legal/contractual terms. In that mode
+# we present a normal browser UA so the IP-rotated traffic isn't blocked
+# purely on UA grounds. The UA itself doesn't claim to be the PokeAlert bot
+# in that mode; that trade-off is explicit and user-controlled via PROXY_URL.
+BROWSER_UA_POOL = [
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+    "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
+    "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:125.0) Gecko/20100101 "
+    "Firefox/125.0",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:125.0) Gecko/20100101 "
+    "Firefox/125.0",
+]
+
 
 class PoliteHttpClient:
     """httpx.AsyncClient wrapper that is polite:
@@ -44,7 +60,24 @@ class PoliteHttpClient:
         circuit_cooldown: float = 600.0,
         timeout: float = 20.0,
     ):
-        self.user_agent = user_agent or os.getenv("USER_AGENT", DEFAULT_UA)
+        # --- Proxy support ---------------------------------------------------
+        # PROXY_URL: e.g. http://user:pass@host:port  OR  socks5://host:port
+        # When set, we assume the user has chosen to route through a
+        # residential/mobile proxy to bypass datacenter-IP WAF blocks.
+        self.proxy_url = os.getenv("PROXY_URL") or os.getenv("HTTPS_PROXY")
+        self.proxy_mode = bool(self.proxy_url)
+
+        # In proxy mode, use a browser UA and rotate it per request to look
+        # like normal residential traffic instead of a self-identifying bot.
+        if self.proxy_mode:
+            self.user_agent = user_agent or os.getenv(
+                "USER_AGENT", BROWSER_UA_POOL[0]
+            )
+            self._ua_pool = list(BROWSER_UA_POOL)
+        else:
+            self.user_agent = user_agent or os.getenv("USER_AGENT", DEFAULT_UA)
+            self._ua_pool = []
+
         self.per_host_min_interval = per_host_min_interval
         self.respect_robots = respect_robots
         self.circuit_threshold = circuit_threshold
@@ -57,7 +90,7 @@ class PoliteHttpClient:
         except ImportError:
             http2 = False
 
-        self._client = httpx.AsyncClient(
+        client_kwargs: dict[str, Any] = dict(
             http2=http2,
             timeout=timeout,
             headers={
@@ -67,6 +100,19 @@ class PoliteHttpClient:
             },
             follow_redirects=True,
         )
+        if self.proxy_mode:
+            # httpx accepts `proxy=` (newer) or `proxies=` (older). Use proxy.
+            try:
+                client_kwargs["proxy"] = self.proxy_url
+                self._client = httpx.AsyncClient(**client_kwargs)
+            except TypeError:
+                client_kwargs.pop("proxy", None)
+                client_kwargs["proxies"] = self.proxy_url
+                self._client = httpx.AsyncClient(**client_kwargs)
+            log.info("http_client_proxy_enabled",
+                     host=urlparse(self.proxy_url).hostname)
+        else:
+            self._client = httpx.AsyncClient(**client_kwargs)
 
         self._last_request_at: dict[str, float] = {}
         self._host_lock: dict[str, asyncio.Lock] = {}
@@ -141,6 +187,22 @@ class PoliteHttpClient:
                 await asyncio.sleep(self.per_host_min_interval - delta)
             self._last_request_at[host] = time.time()
 
+        # In proxy mode, rotate UA per request to blend into residential traffic.
+        req_headers = dict(kwargs.pop("headers", {}) or {})
+        if self.proxy_mode and self._ua_pool:
+            import random
+            req_headers.setdefault("User-Agent", random.choice(self._ua_pool))
+            req_headers.setdefault(
+                "Accept",
+                "text/html,application/xhtml+xml,application/xml;q=0.9,"
+                "image/avif,image/webp,*/*;q=0.8",
+            )
+            req_headers.setdefault("Accept-Language", "en-US,en;q=0.9")
+            req_headers.setdefault("Sec-Fetch-Dest", "document")
+            req_headers.setdefault("Sec-Fetch-Mode", "navigate")
+            req_headers.setdefault("Sec-Fetch-Site", "none")
+            req_headers.setdefault("Upgrade-Insecure-Requests", "1")
+
         try:
             async for attempt in AsyncRetrying(
                 stop=stop_after_attempt(3),
@@ -151,7 +213,9 @@ class PoliteHttpClient:
                 reraise=True,
             ):
                 with attempt:
-                    resp = await self._client.get(url, **kwargs)
+                    resp = await self._client.get(
+                        url, headers=req_headers, **kwargs
+                    )
 
             if resp.status_code in (429, 503):
                 retry_after = int(resp.headers.get("Retry-After", "30"))

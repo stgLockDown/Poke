@@ -19,15 +19,33 @@ A modular, respectful stock-alert system that monitors Pokémon product availabi
 
 ## Supported Retailers
 
-| Retailer | Method | Status |
+| Retailer | Method | Works from Railway/Cloud? |
 |---|---|---|
-| Pokémon Center | Public product pages | ✅ |
-| Target | RedSky API (public) | ✅ |
-| Best Buy | Official Products API (key required) | ✅ |
-| Walmart | Public product pages | ✅ |
-| GameStop | Public product pages | ✅ |
-| Amazon | PA-API 5.0 (affiliate key required) | ✅ |
-| Costco | Public product pages | ✅ |
+| Pokémon Center | Public product pages | ✅ Yes |
+| Target | RedSky API (public) | ⛔ Blocked by robots.txt — needs proxy |
+| Best Buy | Official Products API | ✅ Yes, with `BESTBUY_API_KEY` |
+| Walmart | Public product pages | ⛔ WAF 412 — needs residential proxy |
+| GameStop | Public product pages | ⛔ WAF 403 — needs residential proxy |
+| Amazon | PA-API 5.0 (affiliate key required) | ✅ Yes, with PA-API creds |
+| Costco | Public product pages | ⚠️ Sometimes — may need proxy |
+
+### Why do some retailers show "BLOCKED"?
+
+Major retailers actively block requests coming from cloud/datacenter IPs
+(Railway, Fly, Render, AWS, etc.). This is **not** something an API key
+can fix for GameStop/Walmart/Target — their WAFs look at the source IP's
+reputation, not your credentials.
+
+**The fix is a residential or mobile proxy.** Set `PROXY_URL` in your
+environment (see `.env.example` for format and recommended providers).
+When set, PokeAlert automatically:
+- Routes all traffic through the proxy
+- Switches to a rotating browser User-Agent
+- Adds standard browser headers
+
+Without a proxy, PokeAlert marks those retailers as `BLOCKED` (a distinct
+state from `ERROR`) and continues polling the retailers that *do* work
+from cloud IPs (Pokémon Center, Best Buy via API, Amazon via API).
 
 ## Quickstart
 
