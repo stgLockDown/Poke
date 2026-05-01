@@ -2,7 +2,7 @@
 # https://docs.railway.app/reference/config-as-code
 
 [deploy]
-startCommand = "PYTHONPATH=src python -m pokealert.main run --config config/config.yaml"
+startCommand = "python run.py run"
 healthcheckPath = "/health"
 healthcheckTimeout = 60
 restartPolicyType = "ON_FAILURE"

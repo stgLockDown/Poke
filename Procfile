@@ -1,1 +1,1 @@
-web: PYTHONPATH=src python -m pokealert.main run --config config/config.yaml
+web: python run.py run

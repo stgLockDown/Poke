@@ -39,9 +39,13 @@ def _ensure_config(config: Path, log) -> Path:
 @app.command()
 def run(
     config: Path = typer.Option(
-        Path("config/config.yaml"), "--config", "-c", help="Path to config YAML"
+        Path(os.getenv("POKEALERT_CONFIG", "config/config.yaml")),
+        "--config", "-c", help="Path to config YAML",
     ),
-    env_file: Path = typer.Option(Path(".env"), "--env-file", help="Path to .env"),
+    env_file: Path = typer.Option(
+        Path(os.getenv("POKEALERT_ENV_FILE", ".env")),
+        "--env-file", help="Path to .env",
+    ),
     log_level: str = typer.Option(
         os.getenv("LOG_LEVEL", "INFO"), "--log-level",
     ),
