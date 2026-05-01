@@ -1,0 +1,114 @@
+# =============================================================================
+# PokeAlert configuration — works for any TCG / collectible
+#   Supported out of the box: Pokémon, One Piece, MetaZoo, Lorcana, Magic, Yu-Gi-Oh
+#   (the checkers don't care what the product is — you just pick the URL/ID)
+# =============================================================================
+
+global:
+  default_interval_seconds: 180          # Minimum 60 is enforced
+  jitter_seconds: 30
+  circuit_breaker_threshold: 5
+  circuit_breaker_cooldown_seconds: 600
+  respect_robots_txt: true
+  db_path: data/state.db
+  alert_cooldown_seconds: 900
+  heartbeat_interval_seconds: 900        # 15 min — also posts to DISCORD_WEBHOOK_HEARTBEAT
+  health_port: 8080                      # Overridden by $PORT env (for Railway)
+
+# =============================================================================
+# Web-search "restock scout"
+# Periodically searches for restock news and posts to DISCORD_WEBHOOK_WEB_RESTOCKS
+# Requires ONE of: BRAVE_API_KEY, SERPER_API_KEY, SERPAPI_API_KEY
+# =============================================================================
+web_scout:
+  enabled: true
+  interval_seconds: 1800                 # 30 min
+  # Customize what the scout searches for. Defaults cover Pokémon + other TCGs.
+  queries:
+    - "Pokemon TCG restock"
+    - "Pokemon Elite Trainer Box restock"
+    - "Pokemon 151 booster box in stock"
+    - "Pokemon Prismatic Evolutions restock"
+    - "One Piece TCG restock"
+    - "MetaZoo TCG restock"
+    - "Lorcana booster box in stock"
+    - "Magic the Gathering restock"
+    - "Yu-Gi-Oh restock"
+
+# =============================================================================
+# Notifiers
+# =============================================================================
+notifiers:
+  discord:
+    enabled: true
+    mention_role: false                  # Set true to @mention per-retailer roles
+
+  telegram:
+    enabled: false
+
+  email:
+    enabled: false
+
+  desktop:
+    enabled: false
+
+# =============================================================================
+# Products to monitor
+# -----------------------------------------------------------------------------
+# Fields:
+#   name (required)            — shown in alerts
+#   retailer (required)        — pokemoncenter|target|bestbuy|walmart|gamestop|amazon|costco
+#   min_interval_seconds       — optional, min 60
+#   tcg (optional)             — free-form label: pokemon|onepiece|metazoo|lorcana|mtg|ygo
+#   url / tcin / sku / asin    — retailer-specific identifier
+#   zip_code / radius          — optional local pickup lookup (Target, Best Buy)
+# =============================================================================
+products:
+
+  # ---------- Pokémon ----------
+  - name: "Pokémon TCG: Scarlet & Violet—151 Elite Trainer Box"
+    tcg: pokemon
+    retailer: pokemoncenter
+    url: https://www.pokemoncenter.com/product/292-85-5166/scarlet-violet-151-elite-trainer-box
+
+  - name: "Pokémon TCG: Paldean Fates Elite Trainer Box"
+    tcg: pokemon
+    retailer: target
+    tcin: "89264024"
+    zip_code: "90210"
+    radius: 25
+
+  - name: "Pokémon TCG: Crown Zenith Elite Trainer Box"
+    tcg: pokemon
+    retailer: bestbuy
+    sku: "6522738"
+    zip_code: "90210"
+    radius: 25
+
+  - name: "Pokémon TCG: Paldea Evolved Booster Box"
+    tcg: pokemon
+    retailer: walmart
+    url: https://www.walmart.com/ip/Pokemon-TCG-Scarlet-Violet-Paldea-Evolved-Booster-Box/2749390595
+
+  - name: "Pokémon TCG: Temporal Forces Elite Trainer Box"
+    tcg: pokemon
+    retailer: gamestop
+    url: https://www.gamestop.com/toys-collectibles/trading-cards/products/pokemon-tcg-scarlet--violet-temporal-forces-elite-trainer-box/20002727.html
+
+  # ---------- One Piece TCG ----------
+  # - name: "One Piece TCG: Awakening of the New Era Booster Box"
+  #   tcg: onepiece
+  #   retailer: target
+  #   tcin: "YOUR_TCIN_HERE"
+
+  # ---------- MetaZoo ----------
+  # - name: "MetaZoo: Cryptid Nation Booster Box"
+  #   tcg: metazoo
+  #   retailer: gamestop
+  #   url: https://www.gamestop.com/...
+
+  # ---------- Lorcana ----------
+  # - name: "Lorcana: The First Chapter Booster Box"
+  #   tcg: lorcana
+  #   retailer: bestbuy
+  #   sku: "YOUR_SKU_HERE"

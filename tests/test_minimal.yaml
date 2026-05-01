@@ -1,0 +1,26 @@
+global:
+  default_interval_seconds: 180
+  jitter_seconds: 0
+  circuit_breaker_threshold: 5
+  circuit_breaker_cooldown_seconds: 600
+  respect_robots_txt: false
+  db_path: data/test.db
+  alert_cooldown_seconds: 900
+  heartbeat_interval_seconds: 600
+  health_port: 8090
+
+web_scout:
+  enabled: false
+
+notifiers:
+  discord: {enabled: false}
+  telegram: {enabled: false}
+  email: {enabled: false}
+  desktop: {enabled: false}
+
+products:
+  - name: "Sanity check product"
+    tcg: pokemon
+    retailer: pokemoncenter
+    url: https://httpbin.org/html
+    min_interval_seconds: 60

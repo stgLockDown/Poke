@@ -1,0 +1,28 @@
+# Systemd unit file for running PokeAlert as a service
+# Install: sudo cp pokealert.service /etc/systemd/system/
+#          sudo systemctl daemon-reload
+#          sudo systemctl enable --now pokealert
+[Unit]
+Description=PokeAlert — ethical Pokémon stock monitor
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=pokealert
+Group=pokealert
+WorkingDirectory=/opt/pokealert
+Environment="PYTHONUNBUFFERED=1"
+EnvironmentFile=/opt/pokealert/.env
+ExecStart=/opt/pokealert/.venv/bin/python -m pokealert.main run --config /opt/pokealert/config/config.yaml
+Restart=on-failure
+RestartSec=15
+# Hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/pokealert/data /opt/pokealert/logs
+
+[Install]
+WantedBy=multi-user.target

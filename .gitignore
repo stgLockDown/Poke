@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+*.egg-info/
+build/
+dist/
+
+# Data & secrets
+.env
+config/config.yaml
+data/*.db
+data/*.db-journal
+logs/*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+.DS_Store

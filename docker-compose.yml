@@ -1,0 +1,15 @@
+services:
+  pokealert:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    image: pokealert:latest
+    container_name: pokealert
+    restart: unless-stopped
+    volumes:
+      - ./config:/app/config:ro
+      - ./data:/app/data
+      - ./logs:/app/logs
+    environment:
+      - LOG_LEVEL=INFO
+    # No ports exposed — this is a pure outbound monitor.

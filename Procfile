@@ -1,0 +1,1 @@
+web: python -m pokealert.main run --config config/config.yaml
