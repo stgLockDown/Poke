@@ -1,9 +1,6 @@
 # Railway deployment config
-# Docs: https://docs.railway.app/reference/config-as-code
-
-[build]
-builder = "NIXPACKS"
-buildCommand = "pip install -r requirements.txt"
+# https://docs.railway.app/reference/config-as-code
+# Let Railway's default Python detection handle the build; just override start + health.
 
 [deploy]
 startCommand = "python -m pokealert.main run --config config/config.yaml"
