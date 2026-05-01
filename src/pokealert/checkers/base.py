@@ -31,6 +31,18 @@ class BaseChecker(ABC):
             message=message,
         )
 
+    def _blocked(self, product: ProductConfig, message: str) -> StockResult:
+        """Expected/permanent block — robots.txt disallow, WAF 403, no API key, etc.
+        These do NOT count as errors in the health stats."""
+        return StockResult(
+            product_key=product.key,
+            product_name=product.name,
+            retailer=self.retailer,
+            state=StockState.BLOCKED,
+            url=product.url,
+            message=message,
+        )
+
     def _unknown(self, product: ProductConfig, message: str) -> StockResult:
         return StockResult(
             product_key=product.key,

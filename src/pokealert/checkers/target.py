@@ -50,11 +50,12 @@ class TargetChecker(BaseChecker):
         pdp_resp = await self.http.get(
             PDP_URL.format(key=REDSKY_KEY, tcin=product.tcin, store_id=store_id)
         )
-        if pdp_resp is None or pdp_resp.status_code != 200:
-            return self._error(
-                product,
-                f"PDP fetch failed: {pdp_resp.status_code if pdp_resp else 'no response'}",
-            )
+        if pdp_resp is None:
+            return self._blocked(product, "PDP fetch blocked (robots.txt disallowed redsky.target.com)")
+        if pdp_resp.status_code in (403, 429):
+            return self._blocked(product, f"PDP fetch blocked: HTTP {pdp_resp.status_code}")
+        if pdp_resp.status_code != 200:
+            return self._error(product, f"PDP fetch failed: HTTP {pdp_resp.status_code}")
 
         try:
             pdp = pdp_resp.json()

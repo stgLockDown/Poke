@@ -22,7 +22,11 @@ class WalmartChecker(BaseChecker):
 
         resp = await self.http.get(product.url)
         if resp is None:
-            return self._error(product, "no response (blocked / paused / robots)")
+            return self._blocked(product, "no response (robots.txt disallowed or circuit open)")
+        if resp.status_code in (403, 412):
+            return self._blocked(product, f"HTTP {resp.status_code} — WAF/bot challenge blocking datacenter IP")
+        if resp.status_code == 429:
+            return self._blocked(product, "HTTP 429 — rate limited")
         if resp.status_code != 200:
             return self._error(product, f"HTTP {resp.status_code}")
 

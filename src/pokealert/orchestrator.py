@@ -124,6 +124,8 @@ class Orchestrator:
                 self.stats.incr_check()
                 if result.state == StockState.ERROR:
                     self.stats.incr_error()
+                # BLOCKED = expected/permanent (robots.txt, WAF 403, no API key)
+                # These are not counted as errors — they are known limitations.
                 await self._handle_result(result)
             except asyncio.CancelledError:
                 raise

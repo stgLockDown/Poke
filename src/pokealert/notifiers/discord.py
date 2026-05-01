@@ -52,6 +52,7 @@ STATE_COLOR = {
     StockState.OUT_OF_STOCK: 0x95A5A6,  # grey
     StockState.UNKNOWN:      0x95A5A6,
     StockState.ERROR:        0xE74C3C,  # red
+    StockState.BLOCKED:      0x7F8C8D,  # dark grey
 }
 
 STATE_EMOJI = {
@@ -61,6 +62,7 @@ STATE_EMOJI = {
     StockState.OUT_OF_STOCK: "🔴 Out of Stock",
     StockState.UNKNOWN:      "❔ Unknown",
     StockState.ERROR:        "⚠️ Error",
+    StockState.BLOCKED:      "⛔ Blocked",
 }
 
 

@@ -14,6 +14,7 @@ class StockState(str, Enum):
     QUEUE_ACTIVE = "queue_active"
     UNKNOWN = "unknown"
     ERROR = "error"
+    BLOCKED = "blocked"   # Expected/permanent block (robots.txt, WAF 403, etc.)
 
 
 @dataclass

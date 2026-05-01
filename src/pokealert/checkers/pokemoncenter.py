@@ -28,7 +28,7 @@ class PokemonCenterChecker(BaseChecker):
 
         resp = await self.http.get(product.url)
         if resp is None:
-            return self._error(product, "no response (blocked / paused / robots)")
+            return self._blocked(product, "no response (robots.txt disallowed or circuit open)")
 
         body = resp.text
 
@@ -43,6 +43,8 @@ class PokemonCenterChecker(BaseChecker):
                 message="Queue-It active — drop is likely live right now. Visit the URL manually.",
             )
 
+        if resp.status_code in (403, 429):
+            return self._blocked(product, f"HTTP {resp.status_code} — blocked/rate limited")
         if resp.status_code != 200:
             return self._error(product, f"HTTP {resp.status_code}")
 
@@ -80,10 +82,25 @@ class PokemonCenterChecker(BaseChecker):
 
         if state is None:
             text = body.lower()
-            if re.search(r"sold\s*out|out\s*of\s*stock|unavailable", text):
+            # Broad sold-out signals
+            if re.search(r"sold\s*out|out\s*of\s*stock|unavailable|not\s+available|currently\s+unavailable", text):
                 state = StockState.OUT_OF_STOCK
-            elif re.search(r"add\s*to\s*(cart|bag)", text):
+            # Add-to-cart / buy button signals
+            elif re.search(r"add\s*to\s*(cart|bag)|buy\s+now|add-to-cart", text):
                 state = StockState.IN_STOCK
+            # Pokémon Center specific data attributes
+            elif '"availability":"http://schema.org/InStock"' in body or "'availability':'InStock'" in body:
+                state = StockState.IN_STOCK
+            elif '"availability":"http://schema.org/OutOfStock"' in body:
+                state = StockState.OUT_OF_STOCK
+            # React/Next.js state blob
+            elif re.search(r'"isOutOfStock"\s*:\s*true', body):
+                state = StockState.OUT_OF_STOCK
+            elif re.search(r'"isOutOfStock"\s*:\s*false', body):
+                state = StockState.IN_STOCK
+            # Fallback: if page loaded ok and mentions the product, assume OOS
+            elif resp.status_code == 200 and len(body) > 5000:
+                state = StockState.OUT_OF_STOCK
 
         if state is None:
             return self._unknown(product, "Could not parse availability from page")

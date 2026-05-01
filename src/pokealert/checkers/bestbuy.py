@@ -43,7 +43,7 @@ class BestBuyChecker(BaseChecker):
 
         key = os.getenv("BESTBUY_API_KEY")
         if not key:
-            return self._error(
+            return self._blocked(
                 product,
                 "BESTBUY_API_KEY not set. Get a free key at developer.bestbuy.com",
             )
@@ -51,11 +51,12 @@ class BestBuyChecker(BaseChecker):
         # -------- Online availability --------
         url = BBY_PRODUCT_URL.format(sku=product.sku, key=key)
         resp = await self.http.get(url)
-        if resp is None or resp.status_code != 200:
-            return self._error(
-                product,
-                f"API HTTP {resp.status_code if resp else 'no response'}",
-            )
+        if resp is None:
+            return self._blocked(product, "no response (robots.txt or circuit open)")
+        if resp.status_code in (403, 429):
+            return self._blocked(product, f"HTTP {resp.status_code} — blocked/rate limited")
+        if resp.status_code != 200:
+            return self._error(product, f"API HTTP {resp.status_code}")
 
         try:
             data = resp.json()
