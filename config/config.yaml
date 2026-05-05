@@ -85,6 +85,13 @@ products:
     zip_code: "90210"
     radius: 25
 
+  - name: "Prismatic Evolutions Tech Sticker Collection Glaceon (Tempo)"
+    tcg: pokemon
+    retailer: target
+    tcin: "94827546"
+    zip_code: "90210"
+    radius: 25
+
   - name: "Pokémon TCG: Crown Zenith Elite Trainer Box"
     tcg: pokemon
     retailer: bestbuy
